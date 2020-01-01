@@ -1,0 +1,9 @@
+choice
+	prompt "Machine type"
+	depends on MACH_NOOP
+	default NOOP_SYSLAB18
+
+config NOOP_SYSLAB18
+    bool "NJU OoO on syslab18"
+
+endchoice

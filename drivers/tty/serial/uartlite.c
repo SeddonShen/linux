@@ -190,9 +190,11 @@ static int ulite_transmit(struct uart_port *port, int stat)
 	if (uart_circ_empty(xmit) || uart_tx_stopped(port))
 		return 0;
 
-	uart_out32(xmit->buf[xmit->tail], ULITE_TX, port);
-	xmit->tail = (xmit->tail + 1) & (UART_XMIT_SIZE-1);
-	port->icount.tx++;
+	while (CIRC_CNT(xmit->head, xmit->tail, UART_XMIT_SIZE) >= 1) {
+		uart_out32(xmit->buf[xmit->tail], ULITE_TX, port);
+		xmit->tail = (xmit->tail + 1) & (UART_XMIT_SIZE-1);
+		port->icount.tx++;
+	}
 
 	/* wake up */
 	if (uart_circ_chars_pending(xmit) < WAKEUP_CHARS)
