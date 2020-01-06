@@ -9,11 +9,7 @@
 	model = "uart0";
 
 	chosen {
-      linux,stdin-path = &njuoop_uartlite;
-      linux,stdout-path = &njuoop_uartlite;
-      stdin-path = &njuoop_uartlite;
-      stdout-path = &njuoop_uartlite;
-	  bootargs = "cca=0 lpj=100000 console=ttyUL0,115200n8 rootfstype=squashfs root=/dev/mtdblock1";
+		bootargs = "cca=0 console=ttyUL0,115200n8 rootfstype=ext4 root=/dev/mtdblock0";
 	};
 
 	cpus {
@@ -40,10 +36,8 @@
 	};
 
 	aliases {
-	  serial = &njuoop_uartlite;
-	  console = &njuoop_uartlite;
-	  spi0 = &njuoop_spi;
-	  ethernet = &axi_ethernetlite;
+		spi0 = &njuoop_spi;
+		ethernet = &axi_ethernetlite;
 	};
 
 	memory {
@@ -53,39 +47,39 @@
 	};
 
 	njuoop_uartlite: serial@bfe50000 {
-	  device_type = "serial";
-	  compatible = "xlnx,opb-uartlite-1.00.b";
-	  reg = <0x1fe50000 0x1000>;
-	  reg-shift = <2>;
-      current-speed = <115200>;
-      interrupt-parent = <&cpuintc>;
-      interrupts = <4>;
+		device_type = "serial";
+		compatible = "xlnx,opb-uartlite-1.00.b";
+		reg = <0x1fe50000 0x1000>;
+		reg-shift = <2>;
+		current-speed = <115200>;
+		interrupt-parent = <&cpuintc>;
+		interrupts = <4>;
 	};
 
 	njuoop_spi: spi@bfe80000 {
-        #address-cells = <1>;
-        #size-cells = <0>;
+		#address-cells = <1>;
+		#size-cells = <0>;
 		compatible = "xlnx,xps-spi-2.00.a";
 		reg = <0x1fe80000 0x10000>;
 		// fifo-size = <256>;
-        // interrupt-parent = <&cpuintc>;
-        // interrupts = < 2 >;
-        xlnx,fifo-exist = <0x1>;
-        xlnx,num-ss-bits = <0x1>;
-        xlnx,num-transfer-bits = <0x8>;
+		interrupt-parent = <&cpuintc>;
+		interrupts = <5>;
+		xlnx,fifo-exist = <0x1>;
+		xlnx,num-ss-bits = <0x1>;
+		xlnx,num-transfer-bits = <0x8>;
 
-        spi-flash@0 {
-            compatible = "jedec,spi-nor";
-            reg = <0>; // Chip select 0
-            spi-max-frequency = <30000000>;
-            #address-cells = <1>;
-            #size-cells = <1>;
+		spi-flash@0 {
+			compatible = "jedec,spi-nor";
+			reg = <0>; // Chip select 0
+			spi-max-frequency = <30000000>;
+			#address-cells = <1>;
+			#size-cells = <1>;
 
-            partition@0 {
-                label = "rootfs";
-                reg = <0x0 0x800000>;
-            };
-        };
+			partition@0 {
+				label = "rootfs";
+				reg = <0x0 0x800000>;
+			};
+		};
 	};
 
 	axi_ethernetlite: ethernet@bff00000 {
@@ -103,15 +97,17 @@
 		xlnx,s-axi-id-width = <0x1>;
 		xlnx,tx-ping-pong = <0x1>;
 		xlnx,use-internal = <0x0>;
+		interrupt-parent = <&cpuintc>;
+		interrupts = <6 0>;
 		mdio {
 			#address-cells = <1>;
 			#size-cells = <0>;
 			phy0: phy@1 {
 				device_type = "ethernet-phy";
 				reg = <1>;
-			} ;
-		} ;
-    } ;
+			};
+		};
+	};
 };
 
 &ext {
