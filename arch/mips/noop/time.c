@@ -18,6 +18,7 @@
 
 void __init plat_time_init(void)
 {
+#ifdef CONFIG_NOOP_SOC_ON_BOARD
 	struct device_node *np;
 	struct clk *clk;
 
@@ -39,4 +40,5 @@ void __init plat_time_init(void)
 	mips_hpt_frequency = clk_get_rate(clk);
 	printk("mips_hpt_frequency: %d HZ\n", mips_hpt_frequency);
 	clk_put(clk);
+#endif
 }

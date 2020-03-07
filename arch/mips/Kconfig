@@ -317,7 +317,7 @@ config MIPS_COBALT
 	select USE_GENERIC_EARLY_PRINTK_8250
 
 config MACH_NOOP
-	bool "NOOP"
+	bool "NJU-ProjectN OoO processor"
 	select BOOT_ELF32
 	select BOOT_RAW
 	select BUILTIN_DTB
@@ -1051,6 +1051,7 @@ source "arch/mips/jazz/Kconfig"
 source "arch/mips/jz4740/Kconfig"
 source "arch/mips/lantiq/Kconfig"
 source "arch/mips/lasat/Kconfig"
+source "arch/mips/noop/Kconfig"
 source "arch/mips/pic32/Kconfig"
 source "arch/mips/pistachio/Kconfig"
 source "arch/mips/pmcs-msp71xx/Kconfig"
