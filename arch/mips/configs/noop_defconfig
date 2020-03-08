@@ -221,6 +221,8 @@ CONFIG_MACH_NOOP=y
 # CONFIG_NLM_XLR_BOARD is not set
 # CONFIG_NLM_XLP_BOARD is not set
 # CONFIG_MIPS_PARAVIRT is not set
+CONFIG_NOOP_SOC_ON_BOARD=y
+# CONFIG_NOOP_SOC_EMU is not set
 # end of Machine selection
 
 CONFIG_GENERIC_HWEIGHT=y
@@ -576,10 +578,6 @@ CONFIG_MTD_CFI_UTIL=y
 #
 # Self-contained MTD device drivers
 #
-# CONFIG_MTD_DATAFLASH is not set
-CONFIG_MTD_M25P80=y
-# CONFIG_MTD_MCHP23K256 is not set
-# CONFIG_MTD_SST25L is not set
 # CONFIG_MTD_SLRAM is not set
 # CONFIG_MTD_PHRAM is not set
 # CONFIG_MTD_MTDRAM is not set
@@ -593,7 +591,6 @@ CONFIG_MTD_BLOCK2MTD=y
 
 # CONFIG_MTD_ONENAND is not set
 # CONFIG_MTD_RAW_NAND is not set
-# CONFIG_MTD_SPI_NAND is not set
 
 #
 # LPDDR & LPDDR2 PCM memory drivers
@@ -636,10 +633,8 @@ CONFIG_BLK_DEV=y
 #
 # Misc devices
 #
-# CONFIG_AD525X_DPOT is not set
 # CONFIG_DUMMY_IRQ is not set
 # CONFIG_ENCLOSURE_SERVICES is not set
-# CONFIG_LATTICE_ECP3_CONFIG is not set
 # CONFIG_SRAM is not set
 # CONFIG_XILINX_SDFEC is not set
 # CONFIG_PVPANIC is not set
@@ -648,17 +643,13 @@ CONFIG_BLK_DEV=y
 #
 # EEPROM support
 #
-# CONFIG_EEPROM_AT25 is not set
 # CONFIG_EEPROM_93CX6 is not set
-# CONFIG_EEPROM_93XX46 is not set
 # end of EEPROM support
 
 #
 # Texas Instruments shared transport line discipline
 #
 # end of Texas Instruments shared transport line discipline
-
-# CONFIG_SENSORS_LIS3_SPI is not set
 
 #
 # Altera FPGA firmware download module (requires I2C)
@@ -793,8 +784,6 @@ CONFIG_SERIAL_EARLYCON=y
 #
 # Non-8250 serial port support
 #
-# CONFIG_SERIAL_MAX3100 is not set
-# CONFIG_SERIAL_MAX310X is not set
 CONFIG_SERIAL_UARTLITE=y
 CONFIG_SERIAL_UARTLITE_CONSOLE=y
 CONFIG_SERIAL_UARTLITE_NR_UARTS=1
@@ -802,7 +791,6 @@ CONFIG_SERIAL_CORE=y
 CONFIG_SERIAL_CORE_CONSOLE=y
 # CONFIG_SERIAL_SIFIVE is not set
 # CONFIG_SERIAL_SCCNXP is not set
-# CONFIG_SERIAL_SC16IS7XX is not set
 # CONFIG_SERIAL_BCM63XX is not set
 # CONFIG_SERIAL_ALTERA_JTAGUART is not set
 # CONFIG_SERIAL_ALTERA_UART is not set
@@ -829,34 +817,7 @@ CONFIG_TTY_PRINTK_LEVEL=6
 # end of I2C support
 
 # CONFIG_I3C is not set
-CONFIG_SPI=y
-# CONFIG_SPI_DEBUG is not set
-CONFIG_SPI_MASTER=y
-CONFIG_SPI_MEM=y
-
-#
-# SPI Master Controller Drivers
-#
-# CONFIG_SPI_ALTERA is not set
-# CONFIG_SPI_AXI_SPI_ENGINE is not set
-CONFIG_SPI_BITBANG=y
-# CONFIG_SPI_CADENCE is not set
-# CONFIG_SPI_DESIGNWARE is not set
-# CONFIG_SPI_NXP_FLEXSPI is not set
-# CONFIG_SPI_IMG_SPFI is not set
-# CONFIG_SPI_FSL_SPI is not set
-# CONFIG_SPI_ROCKCHIP is not set
-# CONFIG_SPI_SIFIVE is not set
-# CONFIG_SPI_MXIC is not set
-CONFIG_SPI_XILINX=y
-# CONFIG_SPI_ZYNQMP_GQSPI is not set
-
-#
-# SPI Protocol Masters
-#
-# CONFIG_SPI_SPIDEV is not set
-# CONFIG_SPI_TLE62X0 is not set
-# CONFIG_SPI_SLAVE is not set
+# CONFIG_SPI is not set
 # CONFIG_SPMI is not set
 # CONFIG_HSI is not set
 # CONFIG_PPS is not set
@@ -873,7 +834,6 @@ CONFIG_SPI_XILINX=y
 CONFIG_PINCTRL=y
 # CONFIG_DEBUG_PINCTRL is not set
 # CONFIG_PINCTRL_AMD is not set
-# CONFIG_PINCTRL_MCP23S08 is not set
 # CONFIG_PINCTRL_SINGLE is not set
 # CONFIG_PINCTRL_INGENIC is not set
 # CONFIG_PINCTRL_OCELOT is not set
@@ -896,23 +856,15 @@ CONFIG_BCMA_POSSIBLE=y
 # CONFIG_MFD_ATMEL_FLEXCOM is not set
 # CONFIG_MFD_ATMEL_HLCDC is not set
 # CONFIG_MFD_MADERA is not set
-# CONFIG_MFD_DA9052_SPI is not set
-# CONFIG_MFD_MC13XXX_SPI is not set
 # CONFIG_MFD_HI6421_PMIC is not set
 # CONFIG_HTC_PASIC3 is not set
 # CONFIG_MFD_KEMPLD is not set
 # CONFIG_MFD_MT6397 is not set
-# CONFIG_EZX_PCAP is not set
-# CONFIG_MFD_CPCAP is not set
 # CONFIG_MFD_SM501 is not set
 # CONFIG_ABX500_CORE is not set
-# CONFIG_MFD_STMPE is not set
 # CONFIG_MFD_SYSCON is not set
 # CONFIG_MFD_TI_AM335X_TSCADC is not set
-# CONFIG_MFD_TPS65912_SPI is not set
 # CONFIG_MFD_TQMX86 is not set
-# CONFIG_MFD_ARIZONA_SPI is not set
-# CONFIG_MFD_WM831X_SPI is not set
 # end of Multifunction device drivers
 
 # CONFIG_REGULATOR is not set
