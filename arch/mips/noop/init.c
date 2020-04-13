@@ -37,40 +37,50 @@
 #define CONFIG_DEBUG_UART_BASE ((void *)0xbfe50000)
 
 struct uartlite {
-  unsigned int rx_fifo;
-  unsigned int tx_fifo;
-  unsigned int status;
-  unsigned int control;
+	unsigned int rx_fifo;
+	unsigned int tx_fifo;
+	unsigned int status;
+	unsigned int control;
 };
 
 const char *get_system_type(void)
 {
-  return "noop";
+	return "noop";
 }
 
 void __init plat_mem_setup(void)
 {
-  __dt_setup_arch(__dtb_start);
-  // strlcpy(arcs_cmdline, boot_command_line, COMMAND_LINE_SIZE);
+	__dt_setup_arch(__dtb_start);
+	// strlcpy(arcs_cmdline, boot_command_line, COMMAND_LINE_SIZE);
 }
 
 void prom_putchar(char ch)
 {
-  struct uartlite *regs = (struct uartlite *)CONFIG_DEBUG_UART_BASE;
+	struct uartlite *regs = (struct uartlite *)CONFIG_DEBUG_UART_BASE;
 
-  while (readl(&regs->status) & SR_TX_FIFO_FULL)
-    ;
+	while (readl(&regs->status) & SR_TX_FIFO_FULL)
+		;
 
-  writel(ch & 0xff, &regs->tx_fifo);
+	writel(ch & 0xff, &regs->tx_fifo);
 }
 
 void __init prom_init(void)
 {
-  struct uartlite *regs = (struct uartlite *)CONFIG_DEBUG_UART_BASE;
+	int i;
+	int argc = fw_arg0;
+	char **argv = (char **)fw_arg1;
+	struct uartlite *regs = (struct uartlite *)CONFIG_DEBUG_UART_BASE;
 
-  writel(0, &regs->control);
-  writel(ULITE_CONTROL_RST_RX | ULITE_CONTROL_RST_TX, &regs->control);
-  readl(&regs->control);
+	for (i = 0; i < argc; i++) {
+		if (strlen(arcs_cmdline) + strlen(argv[i]) + 1 >=
+		    sizeof(arcs_cmdline))
+			break;
+		strcat(arcs_cmdline, argv[i]);
+	}
+
+	writel(0, &regs->control);
+	writel(ULITE_CONTROL_RST_RX | ULITE_CONTROL_RST_TX, &regs->control);
+	readl(&regs->control);
 }
 
 void __init prom_free_prom_memory(void)
@@ -79,15 +89,15 @@ void __init prom_free_prom_memory(void)
 
 void __init device_tree_init(void)
 {
-  if (!initial_boot_params)
-    return;
+	if (!initial_boot_params)
+		return;
 
-  unflatten_and_copy_device_tree();
+	unflatten_and_copy_device_tree();
 }
 
 static int __init plat_of_setup(void)
 {
-  return 0;
+	return 0;
 }
 
 arch_initcall(plat_of_setup);
