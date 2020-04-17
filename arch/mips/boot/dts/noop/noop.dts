@@ -9,7 +9,7 @@
 	model = "uart0";
 
 	chosen {
-		bootargs = "cca=0 lpj=200 console=ttyUL0,115200n8 rootfstype=ext4 root=/dev/mtdblock0";
+		bootargs = "cca=0 lpj=200 console=ttyUL0,115200n8 rootfstype=ext4 root=/dev/mtdblock0 rw";
 	};
 
 	cpus {
