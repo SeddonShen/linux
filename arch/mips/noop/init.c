@@ -72,10 +72,16 @@ void __init prom_init(void)
 	struct uartlite *regs = (struct uartlite *)CONFIG_DEBUG_UART_BASE;
 
 	for (i = 0; i < argc; i++) {
-		if (strlen(arcs_cmdline) + strlen(argv[i]) + 1 >=
-		    sizeof(arcs_cmdline))
+		int argi_len = strlen(argv[i]);
+		int arcs_len = strlen(arcs_cmdline);
+		if (arcs_len + argi_len + 1 >= sizeof(arcs_cmdline))
 			break;
-		strcat(arcs_cmdline, argv[i]);
+
+		if (arcs_len > 0 && arcs_cmdline[arcs_len - 1] != ' ')
+			strcat(&arcs_cmdline[arcs_len], " ");
+
+		if (argi_len > 0)
+			strcat(&arcs_cmdline[arcs_len], argv[i]);
 	}
 
 	writel(0, &regs->control);
