@@ -35,6 +35,9 @@
 #define ULITE_CONTROL_RST_RX 0x02
 
 #define CONFIG_DEBUG_UART_BASE ((void *)0xbfe50000)
+#define NOOP_HALT_ADDR ((void *)0xb0000000)
+
+extern void (*_machine_halt)(void);
 
 struct uartlite {
 	unsigned int rx_fifo;
@@ -64,6 +67,11 @@ void prom_putchar(char ch)
 	writel(ch & 0xff, &regs->tx_fifo);
 }
 
+void noop_halt(void)
+{
+	writel(0, NOOP_HALT_ADDR);
+}
+
 void __init prom_init(void)
 {
 	int i;
@@ -87,6 +95,9 @@ void __init prom_init(void)
 	writel(0, &regs->control);
 	writel(ULITE_CONTROL_RST_RX | ULITE_CONTROL_RST_TX, &regs->control);
 	readl(&regs->control);
+
+	/* init machine_halt */
+	_machine_halt = noop_halt;
 }
 
 void __init prom_free_prom_memory(void)
