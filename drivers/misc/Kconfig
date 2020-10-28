@@ -5,6 +5,9 @@
 
 menu "Misc devices"
 
+config NEMUDISK
+	bool "this is a test"
+
 config SENSORS_LIS3LV02D
 	tristate
 	depends on INPUT
