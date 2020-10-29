@@ -1,203 +1,155 @@
+#include <linux/bio.h>
+#include <linux/bvec.h>
+#include <linux/blkdev.h>
+#include <linux/blk_types.h>
 #include <linux/cdev.h>
 #include <linux/fs.h>
 #include <linux/init.h>
 #include <linux/major.h>
 #include <linux/module.h>
-#include <linux/uio.h>
+#include <linux/spinlock.h>
 #include <linux/uaccess.h>
+#include <linux/uio.h>
 #include <linux/vmalloc.h>
+#include <uapi/linux/hdreg.h>
 
-#define NEMUDISK_MAJOR 230
-
-#define ND_BUF_SR 0
-#define ND_ADDR_SR 4
-#define ND_LEN_SR 8
-#define ND_OP_SR 12
-
-#define ND_OP_RD 0
-#define ND_OP_WR 1
-
-#define NEMUDISK_ADDR ((volatile unsigned *)0xbfe97000)
-
-#define ND_BUFSZ 1024
-
-struct nemudisk_dev {
-	size_t disk_size;
-	struct cdev cdev;
-	struct mutex mutex;
-	uint8_t ndbuf[ND_BUFSZ]; // make sure to be shared
+struct vmdisk_dev {
+  size_t size;
+  uint8_t *data;
+  spinlock_t lock;
+  struct request_queue *queue;
+  struct gendisk *gd;
 };
 
-static struct nemudisk_dev nd_shared_data;
+static int VMDISK_MAJOR = 0;
+#define NSECTORS 4096
+#define HARDSECT_SIZE 512
+#define VMDISK_NAME "vmem_disk"
 
-static int nemudisk_open(struct inode *inode, struct file *filp)
-{
-	filp->private_data =
-		container_of(inode->i_cdev, struct nemudisk_dev, cdev);
-	return 0;
+struct vmdisk_dev vmdisk_shared_data;
+
+static void vmdisk_transfer(struct vmdisk_dev *devp, unsigned long sector,
+    unsigned long nsect, char *buffer, int write) {
+  unsigned long offset = sector * HARDSECT_SIZE;
+  unsigned long nbytes = nsect * HARDSECT_SIZE;
+
+  if ((offset + nbytes) > devp->size) {
+    printk(KERN_NOTICE "beyond-end write (%ld %ld)\n", offset, nbytes);
+    return;
+  }
+
+  if (write)
+    memcpy(devp->data + offset, buffer, nbytes);
+  else
+    memcpy(buffer, devp->data + offset, nbytes);
 }
 
-static ssize_t nemudisk_read(struct file *filp, char __user *buf, size_t len,
-			     loff_t *ppos)
-{
-	int ret;
-	size_t i;
-	loff_t pos = *ppos;
-	struct nemudisk_dev *devp = filp->private_data;
+static int vmdisk_xfer_bio(struct vmdisk_dev *devp, struct bio *bio) {
+  struct bio_vec bvec;
+  struct bvec_iter iter;
+  sector_t sector = bio->bi_iter.bi_sector;
 
-	if (pos < 0)
-		return -EINVAL;
-	if (pos >= devp->disk_size)
-		return 0;
+  bio_for_each_segment(bvec, bio, iter) {
+    char *buffer = kmap_atomic(bvec.bv_page);
+    vmdisk_transfer(devp, sector, bio_cur_bytes(bio) >> 9, buffer,
+        bio_data_dir(bio) == WRITE);
+    sector += bio_cur_bytes(bio) >> 9;
+    kunmap_atomic(buffer);
+  }
 
-	/* avoid ops + len overflow */
-	if (len >= devp->disk_size - pos)
-		len = devp->disk_size - pos;
-
-	for (i = 0; i < len; i += ND_BUFSZ) {
-		size_t curl = len - i;
-		if (curl > ND_BUFSZ)
-			curl = ND_BUFSZ;
-
-		mutex_lock(&nd_shared_data.mutex);
-		writel((unsigned long)devp->ndbuf, NEMUDISK_ADDR);
-		writel(pos, NEMUDISK_ADDR + 1);
-		writel(len, NEMUDISK_ADDR + 2);
-		writel(ND_OP_RD, NEMUDISK_ADDR + 3);
-		ret = copy_to_user(buf + i, devp->ndbuf, curl);
-		mutex_unlock(&nd_shared_data.mutex);
-
-		if (ret)
-			return -EFAULT;
-	}
-
-	*ppos += len;
-	return len;
+  return 0;
 }
 
-static ssize_t nemudisk_write(struct file *filp, const char __user *buf,
-			      size_t len, loff_t *ppos)
-{
-	int ret;
-	size_t i;
-	loff_t pos = *ppos;
-	struct nemudisk_dev *devp = filp->private_data;
-	if (pos < 0)
-		return -EINVAL;
-	if (pos >= devp->disk_size)
-		return 0;
+static blk_qc_t vmdisk_make_request(struct request_queue *q, struct bio *bio) {
+  int status;
+  struct vmdisk_dev *devp = q->queuedata;
 
-	if (len >= devp->disk_size - pos)
-		len = devp->disk_size - pos;
+  status = vmdisk_xfer_bio(devp, bio);
+  bio_endio(bio);
 
-	for (i = 0; i < len; i += ND_BUFSZ) {
-		size_t curl = len - i;
-		if (curl > ND_BUFSZ)
-			curl = ND_BUFSZ;
-
-		mutex_lock(&nd_shared_data.mutex);
-		ret = copy_from_user(devp->ndbuf, buf + i, curl);
-
-		if (ret) {
-			mutex_unlock(&nd_shared_data.mutex);
-			return -EFAULT;
-		}
-
-		writel((unsigned long)devp->ndbuf, NEMUDISK_ADDR);
-		writel(pos, NEMUDISK_ADDR + 1);
-		writel(len, NEMUDISK_ADDR + 2);
-		writel(ND_OP_WR, NEMUDISK_ADDR + 3);
-		mutex_unlock(&nd_shared_data.mutex);
-	}
-
-	*ppos += len;
-	return len;
+  return BLK_QC_T_NONE;
 }
 
-static loff_t nemudisk_llseek(struct file *filp, loff_t offset, int orig)
-{
-	struct nemudisk_dev *devp = filp->private_data;
-	switch (orig) {
-	case SEEK_SET:
-		if (offset < 0)
-			return -EINVAL;
-		if (offset > devp->disk_size)
-			return -EINVAL;
-		filp->f_pos = (unsigned int)offset;
-		return offset;
-	case SEEK_CUR:
-		if ((filp->f_pos + offset) > devp->disk_size)
-			return -EINVAL;
-		if ((filp->f_pos + offset) < 0)
-			return -EINVAL;
-		filp->f_pos += offset;
-		break;
-	case SEEK_END:
-		filp->f_pos = devp->disk_size;
-		break;
-	default:
-		return -EINVAL;
-	}
-	return filp->f_pos;
+static int vmdisk_getgeo(struct block_device *bdev, struct hd_geometry *geo) {
+  // struct vmdisk_dev *devp = bdev->bd_disk->private_data;
+
+  geo->cylinders = (NSECTORS & ~0x3f) >> 6;
+  geo->heads = 4;
+  geo->sectors = 16;
+  geo->start = 4;
+
+  return 0;
 }
 
-static long nemudisk_ioctl(struct file *filp, unsigned int cmd,
-			   unsigned long arg)
-{
-	return -EINVAL;
-}
-
-static const struct file_operations nemudisk_ops = {
-	.owner = THIS_MODULE,
-	.open = nemudisk_open,
-	.read = nemudisk_read,
-	.write = nemudisk_write,
-	.llseek = nemudisk_llseek,
-	.unlocked_ioctl = nemudisk_ioctl,
-#if 0
-  .ioctl = xx,
-#endif
+static struct block_device_operations vmdisk_ops = {
+    .owner = THIS_MODULE,
+    .getgeo = vmdisk_getgeo,
 };
 
-static int __init nemudisk_init(void)
-{
-	int err_code = 0;
-	dev_t dev = MKDEV(NEMUDISK_MAJOR, 0);
+static void setup_device(struct vmdisk_dev *devp) {
+  memset(devp, 0, sizeof(struct vmdisk_dev));
 
-	err_code = register_chrdev_region(dev, 1, "nemudisk");
-	if (err_code < 0)
-		goto error_register_region;
+  devp->size = NSECTORS * HARDSECT_SIZE;
+  devp->data = vmalloc(devp->size);
+  if (devp->data == NULL) {
+    printk(KERN_NOTICE "vmalloc failure !!!\n");
+    return;
+  }
 
-	cdev_init(&nd_shared_data.cdev, &nemudisk_ops);
-	nd_shared_data.cdev.owner = THIS_MODULE;
+  spin_lock_init(&devp->lock);
 
-	nd_shared_data.disk_size = readl(NEMUDISK_ADDR + (ND_LEN_SR >> 2));
-	printk("nemudisk size is %u\n", nd_shared_data.disk_size);
+  devp->queue = blk_alloc_queue(GFP_KERNEL);
+  if (devp->queue == NULL) goto out_vfree;
 
-	err_code = cdev_add(&nd_shared_data.cdev, dev, 1);
-	if (err_code < 0)
-		goto error_cdev_add;
+  blk_queue_make_request(devp->queue, vmdisk_make_request);
 
-	mutex_init(&nd_shared_data.mutex);
+  blk_queue_logical_block_size(devp->queue, HARDSECT_SIZE);
+  devp->queue->queuedata = devp;
 
-	return 0;
+  devp->gd = alloc_disk(1);
+  if (!devp->gd) {
+    printk(KERN_NOTICE "alloc_disk failure\n");
+    goto out_vfree;
+  }
 
-error_cdev_add:
-	printk("Fail to invoke cdev_add\n");
+  devp->gd->major = VMDISK_MAJOR;
+  devp->gd->first_minor = 0;
+  devp->gd->fops = &vmdisk_ops;
+  devp->gd->queue = devp->queue;
+  devp->gd->private_data = devp;
+  snprintf(devp->gd->disk_name, 32, VMDISK_NAME);
 
-error_register_region:
-	return err_code;
+  set_capacity(devp->gd, NSECTORS);
+  add_disk(devp->gd);
+  return;
+
+out_vfree:
+  if (devp->data) vfree(devp->data);
 }
 
-static void __exit nemudisk_exit(void)
-{
-	cdev_del(&nd_shared_data.cdev);
-	unregister_chrdev_region(MKDEV(NEMUDISK_MAJOR, 0), 1);
-}
+static int __init vmdisk_init(void) {
+  VMDISK_MAJOR = register_blkdev(0, VMDISK_NAME);
+  if (VMDISK_MAJOR <= 0) {
+    printk(KERN_NOTICE "failed on register major %d\n", VMDISK_MAJOR);
+    return -EBUSY;
+  } else {
+    printk(KERN_NOTICE "new major %d\n", VMDISK_MAJOR);
+  }
 
-module_init(nemudisk_init);
-module_exit(nemudisk_exit);
+  setup_device(&vmdisk_shared_data);
+  return 0;
+}
+module_init(vmdisk_init);
+
+static void __exit vmdisk_exit(void) {
+  unregister_blkdev(VMDISK_MAJOR, VMDISK_NAME);
+  if (vmdisk_shared_data.gd)
+    del_gendisk(vmdisk_shared_data.gd);
+  if (vmdisk_shared_data.queue)
+    blk_cleanup_queue(vmdisk_shared_data.queue);
+}
+module_exit(vmdisk_exit);
 
 MODULE_LICENSE("GPL");
 MODULE_AUTHOR("wierton");
-MODULE_DESCRIPTION("A simple global memory");
+MODULE_DESCRIPTION("A simple vmem disk");
