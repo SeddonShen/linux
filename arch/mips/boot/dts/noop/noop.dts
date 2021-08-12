@@ -48,11 +48,13 @@
 
 	njuoop_uartlite: serial@bfe40000 {
 		device_type = "serial";
-		compatible = "xlnx,opb-uartlite-1.00.b";
+		compatible = "ns16550a";
 		reg = <0x1fe40000 0x4000>;
+		reg-io-width = <4>;
 		reg-shift = <2>;
 		current-speed = <115200>;
 		interrupt-parent = <&cpuintc>;
+		clock-frequency = <100000000>;
 		interrupts = <4>;
 	};
 
