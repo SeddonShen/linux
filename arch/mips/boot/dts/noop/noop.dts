@@ -48,7 +48,7 @@
 
 	njuoop_uartlite: serial@bfe40000 {
 		device_type = "serial";
-		compatible = "ns8250";
+		compatible = "ns16550a";
 		reg = <0x1fe40000 0x1000>;
 		reg-io-width = <4>;
 		reg-shift = <2>;
