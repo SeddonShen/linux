@@ -79,13 +79,13 @@ void noop_halt(void)
 
 void __init prom_init(void)
 {
-	writel(0, (uint32_t*)(EARLY_PRINT_UART_BASE+8)); //Turn off FIFO
-	writel(0x80, (uint32_t*)(EARLY_PRINT_UART_BASE+0xc)); //DLAB=1
-	writel(54, (uint32_t*)(EARLY_PRINT_UART_BASE+0)); //DLL=54=100000000/(16*115200)
+	writel(7, (uint32_t*)(EARLY_PRINT_UART_BASE+2)); //Turn on FIFO
+	writel(0x80, (uint32_t*)(EARLY_PRINT_UART_BASE+3)); //DLAB=1
+	writel(54, (uint32_t*)(EARLY_PRINT_UART_BASE+0)); //DLL=54=100000000/(16*115200)  TLL = 54
 	writel(0, (uint32_t*)(EARLY_PRINT_UART_BASE+4)); //DLM=0
-	writel(3, (uint32_t*)(EARLY_PRINT_UART_BASE+0xc)); //DLAB=0,8N1 Mode
-	writel(0, (uint32_t*)(EARLY_PRINT_UART_BASE+4)); //IER=0
-	writel(0, (uint32_t*)(EARLY_PRINT_UART_BASE+0x10)); //MCR=0
+	writel(3, (uint32_t*)(EARLY_PRINT_UART_BASE+0x3)); //DLAB=0,8N1 Mode
+	writel(3, (uint32_t*)(EARLY_PRINT_UART_BASE+4)); //MCR Modem控制寄存器
+	writel(1, (uint32_t*)(EARLY_PRINT_UART_BASE+1)); //IER enable interrupt
 	// int i;
 	// int argc = fw_arg0;
 	// char **argv = (char **)fw_arg1;
