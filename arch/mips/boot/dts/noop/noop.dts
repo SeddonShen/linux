@@ -9,7 +9,7 @@
 	model = "uart0";
 
 	chosen {
-		bootargs = "cca=0 lpj=200 console=ttyUL0,115200n8 rootfstype=ext4 root=/dev/mtdblock0 rw";
+		bootargs = "cca=0 console=tty1 console=ttyS0,115200n8 rdinit=/bin/sh";
 	};
 
 	cpus {
@@ -48,8 +48,8 @@
 
 	njuoop_uartlite: serial@bfe40000 {
 		device_type = "serial";
-		compatible = "ns16550a";
-		reg = <0x1fe40000 0x4000>;
+		compatible = "ns8250";
+		reg = <0x1fe40000 0x1000>;
 		reg-io-width = <4>;
 		reg-shift = <2>;
 		current-speed = <115200>;
