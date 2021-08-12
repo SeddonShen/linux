@@ -46,10 +46,10 @@
 		reg = <0x00000000 0x8000000>;
 	};
 
-	njuoop_uartlite: serial@bfe50000 {
+	njuoop_uartlite: serial@bfe40000 {
 		device_type = "serial";
 		compatible = "xlnx,opb-uartlite-1.00.b";
-		reg = <0x1fe50000 0x1000>;
+		reg = <0x1fe40000 0x4000>;
 		reg-shift = <2>;
 		current-speed = <115200>;
 		interrupt-parent = <&cpuintc>;

@@ -8,7 +8,7 @@
  * under the terms and conditions of the GNU General Public License,
  * version 2, as published by the Free Software Foundation.
  */
-
+//本文件基本没有修改
 #include <linux/clk.h>
 #include <linux/clk-provider.h>
 #include <linux/clocksource.h>
@@ -24,7 +24,7 @@ void __init plat_time_init(void)
 
 	of_clk_init(NULL);
 	// clocksource_probe();
-
+	//被欧先飞注释的上面
 	np = of_get_cpu_node(0, NULL);
 	if (!np) {
 		pr_err("Failed to get CPU node\n");
@@ -39,6 +39,7 @@ void __init plat_time_init(void)
 
 	mips_hpt_frequency = clk_get_rate(clk);
 	printk("mips_hpt_frequency: %d HZ\n", mips_hpt_frequency);
+	//频率也是老哥改的
 	clk_put(clk);
 #endif
 }
